@@ -1,6 +1,22 @@
 
+*.pickle
+
 \.idea/
+
+src/dataset/
 
 src/__pycache__/
 
 src/dataset_download/downloads/
+
+\.DS_Store
+
+src/clouds_recognizer/Archive\.zip
+
+src/android_app/WeatherForecaster/app/debug/
+
+src/android_app/WeatherForecaster/app/release/
+
+src/clouds_recognizer/logs/2-conv-32-nodes-0-dense-1550709045/
+
+*.satan
