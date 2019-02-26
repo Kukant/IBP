@@ -12,6 +12,8 @@
         android:layout_height="wrap_content"
         android:layout_above="@+id/textView"
         tools:srcCompat="@tools:sample/backgrounds/scenic"
+        android:adjustViewBounds="true"
+        android:layout_marginTop="20sp"
         android:scaleType="centerInside"/>
 
     <TextView
