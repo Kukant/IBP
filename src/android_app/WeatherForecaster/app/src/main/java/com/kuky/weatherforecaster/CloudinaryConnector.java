@@ -3,6 +3,7 @@ package com.kuky.weatherforecaster;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.util.Log;
 
 import com.cloudinary.Cloudinary;
 import com.cloudinary.android.MediaManager;
@@ -30,7 +31,12 @@ public class CloudinaryConnector {
     public CloudinaryConnector(Context appContext, UploadCallback uploadCallback) {
         Map config = new HashMap<>();
         config.put("cloud_name", cloudName);
-        MediaManager.init(appContext, config);
+        try {
+            MediaManager.init(appContext, config);
+        } catch (java.lang.IllegalStateException e) {
+            Log.e("CLOUDINARY CONNECTOR", "already initialized");
+        }
+
         this.uploadCallback = uploadCallback;
         bitmapOptions = new BitmapFactory.Options();
         bitmapOptions.inScaled = false;
@@ -55,9 +61,7 @@ public class CloudinaryConnector {
         Bitmap bitmap = BitmapFactory.decodeFile(filePath, bitmapOptions);
         int w = bitmap.getWidth();
         int h = bitmap.getHeight();
-        if (w * h < 500 * 1000) {
-            return filePath;
-        }
+
         float scale;
         scale = 250 / (float) (w > h ? h : w);
         w = (int) (w * scale);

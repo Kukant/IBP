@@ -2,6 +2,7 @@ package com.kuky.weatherforecaster;
 
 import android.Manifest;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.graphics.ImageFormat;
@@ -82,6 +83,7 @@ public class MainActivity extends AppCompatActivity {
             cameraDevice = null;
         }
     };
+
     TextureView.SurfaceTextureListener textureListener = new TextureView.SurfaceTextureListener() {
         @Override
         public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
@@ -103,41 +105,12 @@ public class MainActivity extends AppCompatActivity {
 
         }
     };
-    UploadCallback uploadCallback = new UploadCallback() {
-        @Override
-        public void onStart(String requestId) {
-
-        }
-
-        @Override
-        public void onProgress(String requestId, long bytes, long totalBytes) {
-
-        }
-
-        @Override
-        public void onSuccess(String requestId, Map resultData) {
-        }
-
-        @Override
-        public void onError(String requestId, ErrorInfo error) {
-            showToast("Error during sending photo: " + error.getCode());
-        }
-
-        @Override
-        public void onReschedule(String requestId, ErrorInfo error) {
-
-        }
-    };
 
 
     private File file;
     private static final int REQUEST_CAMERA_PERMISSION = 200;
     private Handler mBackgroundHandler;
     private HandlerThread mBackgroundThread;
-
-    private CloudinaryConnector cloudinaryConnector;
-    private CloudRecognizer cloudRecognizer;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -156,17 +129,19 @@ public class MainActivity extends AppCompatActivity {
         textureView = findViewById(R.id.textureView);
         assert textureView != null;
         textureView.setSurfaceTextureListener(textureListener);
-        cloudinaryConnector = new CloudinaryConnector(getApplicationContext(), uploadCallback);
-
-        cloudRecognizer = new CloudRecognizer(getApplicationContext());
     }
 
-    private String getPhotoFilename() {
+    private File getPhotoTmpFile() {
         DateFormat df = new SimpleDateFormat("HH-mm-ss");
         String date = df.format(Calendar.getInstance().getTime());
-        return Environment.getExternalStorageDirectory()
-                + "/cloud_" + date + "_"
-                + UUID.randomUUID().toString() + ".jpeg";
+        File outputDir = getApplicationContext().getCacheDir(); // context being the Activity pointer
+        try {
+            return File.createTempFile("cloud_"+ UUID.randomUUID().toString() + date, "jpg", outputDir);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return null;
     }
 
     private void takePicture() {
@@ -192,15 +167,17 @@ public class MainActivity extends AppCompatActivity {
                 height = idealSize.getHeight();
             }
             ImageReader reader = ImageReader.newInstance(width, height, ImageFormat.JPEG, 1);
-            List<Surface> outputSurface = new ArrayList<>(2);
-            outputSurface.add(reader.getSurface());
-            outputSurface.add(new Surface(textureView.getSurfaceTexture()));
+            List<Surface> outputSurfaces = new ArrayList<>(2);
+            outputSurfaces.add(reader.getSurface());
+            outputSurfaces.add(new Surface(textureView.getSurfaceTexture()));
 
             final CaptureRequest.Builder captureBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
             captureBuilder.addTarget(reader.getSurface());
             captureBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
 
-            file = new File(getPhotoFilename());
+            file = getPhotoTmpFile();
+
+            // this will be executed in the background thread
             ImageReader.OnImageAvailableListener readerListener = new ImageReader.OnImageAvailableListener() {
                 @Override
                 public void onImageAvailable(ImageReader reader) {
@@ -239,7 +216,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             };
 
-            reader.setOnImageAvailableListener(readerListener, mBackgroundHandler);
+            reader.setOnImageAvailableListener(readerListener, null);
 
             final CameraCaptureSession.CaptureCallback captureListener = new CameraCaptureSession.CaptureCallback() {
                 @Override
@@ -249,11 +226,11 @@ public class MainActivity extends AppCompatActivity {
                 }
             };
 
-            cameraDevice.createCaptureSession(outputSurface, new CameraCaptureSession.StateCallback() {
+            cameraDevice.createCaptureSession(outputSurfaces, new CameraCaptureSession.StateCallback() {
                 @Override
                 public void onConfigured(@NonNull CameraCaptureSession session) {
                     try {
-                        session.capture(captureBuilder.build(), captureListener, mBackgroundHandler);
+                        session.capture(captureBuilder.build(), captureListener, null);
                     } catch (CameraAccessException e) {
                         e.printStackTrace();
                     }
@@ -263,24 +240,23 @@ public class MainActivity extends AppCompatActivity {
                 public void onConfigureFailed(@NonNull CameraCaptureSession session) {
 
                 }
-            }, mBackgroundHandler);
+            }, null);
 
         } catch (CameraAccessException e) {
             e.printStackTrace();
-        } finally {
-            btnCapture.setEnabled(true);
         }
     }
 
     private Size getIdealSize(Size[] jpegSizes) {
+        int averageSize = 800;
         int bestSizeIdx = 0;
         int bestSize = 42000;
         for (int i = 0; i < jpegSizes.length; i++) {
             Size c = jpegSizes[i];
             int h = c.getHeight();
             int w = c.getWidth();
-            int rating = Math.abs(200 - (h + w)/2);
-            if (rating < bestSize && h > 200 && w > 200) {
+            int rating = Math.abs(averageSize - (h + w)/2);
+            if (rating < bestSize && h > averageSize && w > averageSize) {
                 bestSize = rating;
                 bestSizeIdx = i;
             }
@@ -318,7 +294,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void updatePreview() {
         if (cameraDevice == null) {
-            Toast.makeText(MainActivity.this, "Error", Toast.LENGTH_SHORT).show();
+            showToast("Error on updatePreview.");
         }
         captureRequestBuilder.set(CaptureRequest.CONTROL_MODE, CaptureRequest.CONTROL_MODE_AUTO);
         try {
@@ -408,10 +384,15 @@ public class MainActivity extends AppCompatActivity {
 
     private void processFile(String filepath) {
         showToast("Processing image.");
-        float isCloud = cloudRecognizer.IsCloud(filepath);
-        showToast("Photo is " + String.format(Locale.ENGLISH, "%.2f", isCloud) + " cloud.");
-        String preset = (isCloud > 0.8) ? CloudinaryConnector.cloudsPreset : CloudinaryConnector.othersPreset;
-        cloudinaryConnector.sendImage(filepath, preset);
+        analyzePhotoActivity(filepath);
+
+    }
+
+    private void analyzePhotoActivity(String filepath) {
+        Intent intent = new Intent(MainActivity.this, AnalyzePhotoActivity.class);
+        intent.putExtra("filepath", filepath);
+        startActivity(intent);
+        btnCapture.setEnabled(true);
     }
 
     private String getAppVersionName(){
