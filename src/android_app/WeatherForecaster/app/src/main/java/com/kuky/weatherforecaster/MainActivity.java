@@ -3,9 +3,10 @@ package com.kuky.weatherforecaster;
 import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.graphics.ImageFormat;
+import android.graphics.Point;
+import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
@@ -18,7 +19,6 @@ import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.support.annotation.NonNull;
@@ -26,15 +26,14 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Size;
-import android.util.SparseIntArray;
 import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.FrameLayout;
+import android.widget.RelativeLayout;
 import android.widget.Toast;
-
-import com.cloudinary.android.callback.ErrorInfo;
-import com.cloudinary.android.callback.UploadCallback;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -48,8 +47,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 import java.util.UUID;
 import java.lang.*;
 
@@ -62,7 +59,7 @@ public class MainActivity extends AppCompatActivity {
     private CameraDevice cameraDevice;
     private CameraCaptureSession cameraCaptureSession;
     private CaptureRequest.Builder captureRequestBuilder;
-    private Size imageDimension;
+    private Size previewDimensions;
     private Toast toast;
 
     CameraDevice.StateCallback stateCallBack = new CameraDevice.StateCallback() {
@@ -247,29 +244,31 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private Size getIdealSize(Size[] jpegSizes) {
-        int averageSize = 800;
+    private Size getIdealSize(Size[] cameraSizes) {
+        // ideal size is the one that will cover the most of the screen
+        Size displaySize = getDisplaySize();
+        int screenWidth = displaySize.getWidth();
+        int screenHeight = displaySize.getHeight();
+
         int bestSizeIdx = 0;
-        int bestSize = 42000;
-        for (int i = 0; i < jpegSizes.length; i++) {
-            Size c = jpegSizes[i];
-            int h = c.getHeight();
-            int w = c.getWidth();
-            int rating = Math.abs(averageSize - (h + w)/2);
-            if (rating < bestSize && h > averageSize && w > averageSize) {
-                bestSize = rating;
+        int bestRating = Integer.MAX_VALUE;
+        for (int i = 0; i < cameraSizes.length; i++) {
+            Size c = cameraSizes[i];
+            int r = Math.abs(screenWidth - c.getWidth()) + Math.abs(screenHeight - c.getHeight());
+            if (r < bestRating) {
+                bestRating = r;
                 bestSizeIdx = i;
             }
         }
 
-        return jpegSizes[bestSizeIdx];
+        return cameraSizes[bestSizeIdx];
     }
 
     private void createCameraPreview() {
         try {
             SurfaceTexture texture = textureView.getSurfaceTexture();
             assert texture != null;
-            texture.setDefaultBufferSize(imageDimension.getWidth(), imageDimension.getHeight());
+            texture.setDefaultBufferSize(previewDimensions.getWidth(), previewDimensions.getHeight());
             Surface surface = new Surface(texture);
             captureRequestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
             captureRequestBuilder.addTarget(surface);
@@ -304,6 +303,24 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private void updateTextureViewSize() {
+        int previewHeight = previewDimensions.getWidth();
+        int previewWidth = previewDimensions.getHeight();
+        Size screenSize = getDisplaySize();
+        int screenWidth = screenSize.getWidth();
+        int screenHeight = screenSize.getHeight();
+
+        int height = (int)(previewHeight * ((float) screenWidth / previewWidth));
+
+        FrameLayout.LayoutParams layout = new FrameLayout.LayoutParams(screenSize.getWidth(), height);
+
+        int spaceLeft = screenHeight - height;
+        layout.setMargins(0, (int)(spaceLeft * 0.3), 0, (int)(spaceLeft * 0.7));
+
+        textureView.setLayoutParams(layout);
+
+    }
+
     private void openCamera() {
         CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
         try {
@@ -311,7 +328,9 @@ public class MainActivity extends AppCompatActivity {
             CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraId);
             StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
             assert map != null;
-            imageDimension = map.getOutputSizes(SurfaceTexture.class)[0];
+            Size []previewSizes = map.getOutputSizes(SurfaceTexture.class);
+            previewDimensions = getIdealSize(previewSizes);
+            updateTextureViewSize();
             // check realtime permission if run higher API 23
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
                 ActivityCompat.requestPermissions(this, new String[]{
@@ -410,5 +429,9 @@ public class MainActivity extends AppCompatActivity {
             ret = "err";
         }
         return ret;
+    }
+    private Size getDisplaySize() {
+        RelativeLayout rootView = findViewById(R.id.rootView);
+        return new Size(rootView.getWidth(), rootView.getHeight());
     }
 }

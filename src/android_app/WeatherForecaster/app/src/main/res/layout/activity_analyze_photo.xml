@@ -4,7 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".AnalyzePhotoActivity">
+    tools:context=".AnalyzePhotoActivity"
+    android:background="@android:color/background_dark">
 
     <ImageView
         android:id="@+id/imageView"
@@ -27,6 +28,7 @@
         android:textSize="20sp"
         android:minHeight="100sp"
         android:gravity="center"
+        android:textColor="#fff"
         />
 
     <Button
@@ -34,6 +36,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Back"
-        android:layout_alignParentBottom="true" />
+        android:layout_alignParentBottom="true"
+        android:background="@android:color/darker_gray"/>
 
 </RelativeLayout>
