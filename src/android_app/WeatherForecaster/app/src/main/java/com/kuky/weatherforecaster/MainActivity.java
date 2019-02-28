@@ -350,6 +350,11 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onPause() {
+        if (cameraDevice != null) {
+            cameraDevice.close();
+            cameraDevice = null;
+        }
+
         if (toast != null) {
             toast.cancel();
         }
