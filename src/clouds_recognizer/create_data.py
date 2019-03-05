@@ -4,6 +4,7 @@ import random
 import numpy
 import pickle
 
+
 DATADIR = "../dataset/"
 CLOUD_CATEGORIES = \
     [

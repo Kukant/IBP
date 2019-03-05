@@ -81,10 +81,7 @@ public class AnalyzePhotoActivity extends AppCompatActivity {
 
     private void showImage(String filepath) {
         Bitmap imgBitmap = BitmapFactory.decodeFile(filepath);
-        Matrix matrix = new Matrix();
-        matrix.postRotate(90);
-        Bitmap rotatedBitmap = Bitmap.createBitmap(imgBitmap, 0, 0, imgBitmap.getWidth(), imgBitmap.getHeight(), matrix, true);
-        imageView.setImageBitmap(rotatedBitmap);
+        imageView.setImageBitmap(imgBitmap);
     }
 
 
