@@ -3,6 +3,7 @@ package com.kuky.weatherforecaster;
 import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.SurfaceTexture;
@@ -15,6 +16,7 @@ import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -24,7 +26,6 @@ import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
 import android.widget.Button;
-import android.widget.FrameLayout;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
@@ -42,14 +43,17 @@ import java.lang.*;
 public class MainActivity extends AppCompatActivity {
 
     private Button btnCapture;
-    private TextureView textureView;
+    private CameraTextureView textureView;
 
-    private String cameraId;
+    private int cameraIdIndex;
     private CameraDevice cameraDevice;
     private CameraCaptureSession cameraCaptureSession;
     private CaptureRequest.Builder captureRequestBuilder;
     private Size previewDimensions;
     private Toast toast;
+    private String[] cameraIds;
+
+    public CameraCharacteristics characteristics;
 
     CameraDevice.StateCallback stateCallBack = new CameraDevice.StateCallback() {
         @Override
@@ -97,6 +101,8 @@ public class MainActivity extends AppCompatActivity {
     private static final int REQUEST_CAMERA_PERMISSION = 200;
     private Handler mBackgroundHandler;
     private HandlerThread mBackgroundThread;
+    private CloudRecognizer cloudRecognizer;
+    private CloudinaryConnector cloudinaryConnector;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -117,6 +123,47 @@ public class MainActivity extends AppCompatActivity {
         textureView = findViewById(R.id.textureView);
         assert textureView != null;
         textureView.setSurfaceTextureListener(textureListener);
+        textureView.mainActivity = this;
+
+        getCameraIds();
+        cameraIdIndex = 0;
+
+        Button btnNextCamera = findViewById(R.id.btnNextCamera);
+        assert btnNextCamera != null;
+        btnNextCamera.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                nextCamera();
+            }
+        });
+
+        Button btnSettings = findViewById(R.id.btnSettings);
+        assert btnSettings != null;
+        btnSettings.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                settingsActivity();
+            }
+        });
+
+        cloudRecognizer = new CloudRecognizer(getApplicationContext());
+
+        cloudinaryConnector = new CloudinaryConnector(getApplicationContext());
+    }
+
+    private void getCameraIds() {
+        CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
+        try {
+            cameraIds = manager.getCameraIdList();
+        } catch (CameraAccessException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void nextCamera() {
+        closeCamera();
+        cameraIdIndex = (cameraIdIndex + 1) % cameraIds.length;
+        openCamera();
     }
 
     private File getPhotoTmpFile() {
@@ -214,11 +261,14 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void updatePreview() {
+    protected void updatePreview() {
         if (cameraDevice == null) {
             showToast("Error on updatePreview.");
         }
         captureRequestBuilder.set(CaptureRequest.CONTROL_MODE, CaptureRequest.CONTROL_MODE_AUTO);
+        if (textureView.zoom != null) {
+            captureRequestBuilder.set(CaptureRequest.SCALER_CROP_REGION, textureView.zoom);
+        }
         try {
             cameraCaptureSession.setRepeatingRequest(captureRequestBuilder.build(), null, mBackgroundHandler);
         } catch (CameraAccessException e) {
@@ -226,34 +276,17 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void updateTextureViewSize() {
-        int previewHeight = previewDimensions.getWidth();
-        int previewWidth = previewDimensions.getHeight();
-        Size screenSize = getDisplaySize();
-        int screenWidth = screenSize.getWidth();
-        int screenHeight = screenSize.getHeight();
-
-        int height = (int)(previewHeight * ((float) screenWidth / previewWidth));
-
-        FrameLayout.LayoutParams layout = new FrameLayout.LayoutParams(screenSize.getWidth(), height);
-
-        int spaceLeft = screenHeight - height;
-        layout.setMargins(0, (int)(spaceLeft * 0.3), 0, (int)(spaceLeft * 0.7));
-
-        textureView.setLayoutParams(layout);
-
-    }
-
     private void openCamera() {
         CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
         try {
-            cameraId = manager.getCameraIdList()[0];
-            CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraId);
+            characteristics = manager.getCameraCharacteristics(cameraIds[cameraIdIndex]);
             StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+            textureView.maximumZoomLevel = characteristics.get(CameraCharacteristics.SCALER_AVAILABLE_MAX_DIGITAL_ZOOM);
             assert map != null;
             Size []previewSizes = map.getOutputSizes(SurfaceTexture.class);
             previewDimensions = getIdealSize(previewSizes);
-            updateTextureViewSize();
+            textureView.resizeByPreview(previewDimensions, getDisplaySize());
+
             // check realtime permission if run higher API 23
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
                 ActivityCompat.requestPermissions(this, new String[]{
@@ -262,9 +295,12 @@ public class MainActivity extends AppCompatActivity {
                 }, REQUEST_CAMERA_PERMISSION);
                 return;
             }
-            manager.openCamera(cameraId, stateCallBack, null);
+
+            manager.openCamera(cameraIds[cameraIdIndex], stateCallBack, null);
 
         } catch (CameraAccessException e) {
+            e.printStackTrace();
+        } catch (NullPointerException e) {
             e.printStackTrace();
         }
     }
@@ -344,7 +380,23 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void processFile(String filepath) {
-        analyzePhotoActivity(filepath);
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+        boolean quickMode = preferences.getBoolean("key_switch_quick_mode", false);
+
+        if (quickMode) {
+            float cloudProbability = cloudRecognizer.IsCloud(filepath);
+            cloudinaryConnector.sendImage(filepath,
+                    cloudProbability > 0.8 ? CloudinaryConnector.cloudsPreset : CloudinaryConnector.othersPreset);
+
+            showToast("Photo is " + String.valueOf(cloudProbability) + " sky.");
+        } else {
+            analyzePhotoActivity(filepath);
+        }
+    }
+
+    private void settingsActivity() {
+        Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
+        startActivity(intent);
     }
 
     private void analyzePhotoActivity(String filepath) {

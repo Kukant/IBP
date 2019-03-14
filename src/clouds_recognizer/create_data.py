@@ -18,11 +18,16 @@ OTHER_CLASS = 0
 IMG_SIZE = 200
 
 
-def process_image(image_path):
+def process_image(image_path, augumentation=False):
     try:
+        ret = []
         img_array = cv2.imread(image_path)
         resized = cv2.resize(img_array, (IMG_SIZE, IMG_SIZE))
-        return resized
+        ret.append(resized)
+        if augumentation:
+            for rotation in [cv2.ROTATE_90_CLOCKWISE, cv2.ROTATE_90_COUNTERCLOCKWISE, cv2.ROTATE_180]:
+                ret.append(cv2.rotate(resized, rotation))
+        return ret
     except Exception as e:
         return None
 
@@ -35,17 +40,19 @@ def create_training_data():
         cloud_category_path = os.path.join(DATADIR, cloud_category)
         for cloud in os.listdir(cloud_category_path):
             cloud_path = os.path.join(cloud_category_path, cloud)
-            processed_image = process_image(cloud_path)
-            if processed_image is not None:
-                training_data.append([processed_image, CLOUD_CLASS])
+            processed_images = process_image(cloud_path, augumentation=False)
+            if processed_images is not None:
+                for img in processed_images:
+                    training_data.append([img, CLOUD_CLASS])
 
     print("Loading random.")
     random_images_path = os.path.join(DATADIR, RANDOM_CATEGORY)
     for random_image in os.listdir(random_images_path):
         random_image_path = os.path.join(random_images_path, random_image)
-        processed_image = process_image(random_image_path)
-        if processed_image is not None:
-            training_data.append([processed_image, OTHER_CLASS])
+        processed_images = process_image(random_image_path, augumentation=False)
+        if processed_images is not None:
+            for img in processed_images:
+                training_data.append([img, OTHER_CLASS])
 
     print("Data loaded.")
     return training_data

@@ -28,7 +28,7 @@ public class CloudinaryConnector {
     public static String othersPreset = "others";
 
 
-    public CloudinaryConnector(Context appContext, UploadCallback uploadCallback) {
+    public CloudinaryConnector(Context appContext) {
         Map config = new HashMap<>();
         config.put("cloud_name", cloudName);
         try {
@@ -37,7 +37,6 @@ public class CloudinaryConnector {
             Log.e("CLOUDINARY CONNECTOR", "already initialized");
         }
 
-        this.uploadCallback = uploadCallback;
         bitmapOptions = new BitmapFactory.Options();
         bitmapOptions.inScaled = false;
         ctx = appContext;
@@ -49,7 +48,6 @@ public class CloudinaryConnector {
             MediaManager.get()
                     .upload(filePath)
                     .unsigned(preset)
-                    .callback(uploadCallback)
                     .dispatch();
         } catch (Exception e) {
             e.printStackTrace();

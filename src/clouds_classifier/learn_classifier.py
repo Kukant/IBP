@@ -4,7 +4,6 @@ from keras.models import Sequential, load_model
 from keras.layers import Dense, Dropout, Activation, Flatten, Conv2D, MaxPooling2D
 from keras.callbacks import TensorBoard
 from time import time
-from keras import backend as K
 from keras.utils.np_utils import to_categorical
 
 X = pickle.load(open("X.pickle", "rb"))
@@ -46,7 +45,7 @@ for dense_layer in dense_layers:
                           optimizer="adam",
                           metrics=["accuracy"])
 
-            model.fit(X, y, batch_size=10, validation_split=0.3, epochs=5, callbacks=[tensorboard, ])
+            model.fit(X, y, batch_size=16, validation_split=0.3, epochs=5, callbacks=[tensorboard, ])
 
             model.save("{}.model".format(NAME))
 

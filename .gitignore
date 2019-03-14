@@ -22,3 +22,5 @@ src/clouds_recognizer/logs/2-conv-32-nodes-0-dense-1550709045/
 *.satan
 
 *.jpg
+
+*.model

@@ -24,31 +24,6 @@ public class AnalyzePhotoActivity extends AppCompatActivity {
     private TextView textView;
     private ImageView imageView;
 
-    UploadCallback uploadCallback = new UploadCallback() {
-        @Override
-        public void onStart(String requestId) {
-
-        }
-
-        @Override
-        public void onProgress(String requestId, long bytes, long totalBytes) {
-
-        }
-
-        @Override
-        public void onSuccess(String requestId, Map resultData) {
-        }
-
-        @Override
-        public void onError(String requestId, ErrorInfo error) {
-        }
-
-        @Override
-        public void onReschedule(String requestId, ErrorInfo error) {
-
-        }
-    };
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -68,7 +43,7 @@ public class AnalyzePhotoActivity extends AppCompatActivity {
 
         cloudRecognizer = new CloudRecognizer(getApplicationContext());
 
-        cloudinaryConnector = new CloudinaryConnector(getApplicationContext(), uploadCallback);
+        cloudinaryConnector = new CloudinaryConnector(getApplicationContext());
 
         Bundle bundle = getIntent().getExtras();
         assert bundle != null;

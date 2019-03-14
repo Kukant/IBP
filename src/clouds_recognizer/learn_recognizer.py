@@ -1,18 +1,10 @@
 import pickle
-import tensorflow as tf
 from keras.models import Sequential, load_model
 from keras.layers import Dense, Dropout, Activation, Flatten, Conv2D, MaxPooling2D
 from keras.callbacks import TensorBoard
 from time import time
-from keras import backend as K
 
-NAME = "2-conv-32-nodes-0-dense-1550709045"
-m = load_model(NAME + ".model")
-with open("{}.json".format(NAME), "w") as fw:
-    fw.write(m.to_json())
-m.save_weights("{}.h5".format(NAME))
 
-exit(0)
 X = pickle.load(open("X.pickle", "rb"))
 y = pickle.load(open("y.pickle", "rb"))
 X = X/255.0
@@ -55,9 +47,6 @@ for dense_layer in dense_layers:
             model.fit(X, y, batch_size=32, validation_split=0.3, epochs=5, callbacks=[tensorboard, ])
 
             model.save("{}.model".format(NAME))
-            with open("{}.json".format(NAME), "fw") as fw:
-                fw.write(model.to_json())
-            model.save_weights("{}.h5")
 
 
 

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <SwitchPreference
+        android:key="key_switch_quick_mode"
+        android:title="Quick mode"
+        android:summary="Click to switch on or off"
+        android:defaultValue="false"/>
+
+</PreferenceScreen>
