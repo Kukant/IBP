@@ -13,6 +13,9 @@ import com.cloudinary.utils.ObjectUtils;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -48,10 +51,18 @@ public class CloudinaryConnector {
             MediaManager.get()
                     .upload(filePath)
                     .unsigned(preset)
+                    .option("public_id", getUniqueFilename())
                     .dispatch();
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private String getUniqueFilename() {
+        DateFormat df = new SimpleDateFormat("yyMMddHHmmss");
+        String date = df.format(Calendar.getInstance().getTime());
+        String ranStr = UUID.randomUUID().toString().replace("-", "").substring(0, 6);
+        return date + "-" + ranStr;
     }
 
     private String scaleImage(String filePath) {

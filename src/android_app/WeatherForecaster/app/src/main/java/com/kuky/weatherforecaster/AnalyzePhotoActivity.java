@@ -63,9 +63,9 @@ public class AnalyzePhotoActivity extends AppCompatActivity {
     private void analyzeImage(String filepath) {
         float cloudProbability = cloudRecognizer.IsCloud(filepath);
         cloudinaryConnector.sendImage(filepath,
-                cloudProbability > 0.8 ? CloudinaryConnector.cloudsPreset : CloudinaryConnector.othersPreset);
+                cloudProbability > 0.5 ? CloudinaryConnector.cloudsPreset : CloudinaryConnector.othersPreset);
 
-        textView.setText(String.format(Locale.ENGLISH, "Object on photo is %.3f cloud.", cloudProbability));
+        textView.setText(String.format(Locale.ENGLISH, "Object on photo is %.2f %% sky.", cloudProbability*100));
     }
 
     private void backToMainActivity() {

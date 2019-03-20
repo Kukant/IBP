@@ -37,6 +37,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Locale;
 import java.util.UUID;
 import java.lang.*;
 
@@ -386,9 +387,9 @@ public class MainActivity extends AppCompatActivity {
         if (quickMode) {
             float cloudProbability = cloudRecognizer.IsCloud(filepath);
             cloudinaryConnector.sendImage(filepath,
-                    cloudProbability > 0.8 ? CloudinaryConnector.cloudsPreset : CloudinaryConnector.othersPreset);
+                    cloudProbability > 0.5 ? CloudinaryConnector.cloudsPreset : CloudinaryConnector.othersPreset);
 
-            showToast("Photo is " + String.valueOf(cloudProbability) + " sky.");
+            showToast(String.format(Locale.ENGLISH, "Object on photo is %.2f %% sky.", cloudProbability*100));
         } else {
             analyzePhotoActivity(filepath);
         }

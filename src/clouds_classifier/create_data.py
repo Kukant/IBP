@@ -5,6 +5,12 @@ import numpy
 import pickle
 
 DATADIR = "../dataset/"
+
+ALL_CATEGORIES = [
+     "clear_sky", "cirrus", "cirrocumulus", "altocumulus", "cirrostratus", "altostratus",
+     "stratocumulus", "nimbostratus", "stratus", "cumulus", "cumulonimbus"
+]
+
 CLOUD_CATEGORIES = \
     [
      "clear_sky,cirrus", "cirrocumulus,altocumulus", "cirrostratus,altostratus",
