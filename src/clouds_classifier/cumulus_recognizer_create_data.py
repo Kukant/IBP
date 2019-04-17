@@ -4,23 +4,15 @@ import random
 import numpy
 import pickle
 
-DATADIRS = ["../mujdataset/", "../dataset/"]
+DATADIRS = ["../mujdataset/"]
 
 ALL_CATEGORIES = [
      "clear_sky", "cirrus", "cirrocumulus", "altocumulus", "cirrostratus", "altostratus",
      "stratocumulus", "nimbostratus", "stratus", "cumulus",# "cumulonimbus"
 ]
 
-CLOUD_CATEGORIES = \
-    [
-     "clear_sky,cirrus", "cirrocumulus,altocumulus", "cirrostratus,altostratus",
-     "stratocumulus", "nimbostratus,stratus", "cumulus", #"cumulonimbus"
-    ]
 
-
-def category_class(cat):
-    return ALL_CATEGORIES.index(cat)
-
+selected_category = "clear_sky"
 
 IMG_SIZE = 200
 
@@ -29,6 +21,10 @@ def process_image(image_path):
     try:
         img_array = cv2.imread(image_path)
         resized = cv2.resize(img_array, (IMG_SIZE, IMG_SIZE))
+        hsv = cv2.cvtColor(resized, cv2.COLOR_BGR2HLS)
+        if random.random() < 0.1 and False:
+            cv2.imshow('image', resized)
+            cv2.waitKey(0)
         return resized
     except Exception as e:
         print(e)
@@ -38,14 +34,20 @@ def process_image(image_path):
 def create_training_data():
     training_data = []
     print("Loading clouds.")
-    all_imgs = { x: [] for x in range(len(ALL_CATEGORIES))}
+    all_imgs = {x: [] for x in [0, 1]}
     for cloud_class in ALL_CATEGORIES:
         for datadir in DATADIRS:
             for cloud_cat in cloud_class.split(','):
                 cloud_category_path = os.path.join(datadir, cloud_cat)
                 for cloud_file in os.listdir(cloud_category_path):
                     cloud_path = os.path.join(cloud_category_path, cloud_file)
-                    all_imgs[category_class(cloud_class)].append(cloud_path)
+                    all_imgs[1 if selected_category == cloud_class else 0].append(cloud_path)
+
+    selected_category_len = len(all_imgs[1])
+    random.shuffle(all_imgs[0])
+    all_imgs[0] = all_imgs[0][:selected_category_len]
+
+    print("{} count is {}".format(selected_category, selected_category_len))
 
     for img_class, img_paths in all_imgs.items():
         for img_path in img_paths:
@@ -73,10 +75,10 @@ if __name__ == "__main__":
     # convert to numpy array
     X = numpy.array(X).reshape((-1, IMG_SIZE, IMG_SIZE, 3))
 
-    with open("X.pickle", "wb") as fw:
+    with open("{}_X.pickle".format(selected_category), "wb") as fw:
         pickle.dump(X, fw)
 
-    with open("y.pickle", "wb") as fw:
+    with open("{}_y.pickle".format(selected_category), "wb") as fw:
         pickle.dump(y, fw)
 
     print("Data saved successfully.")

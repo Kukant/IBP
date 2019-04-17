@@ -9,7 +9,7 @@ import org.tensorflow.contrib.android.TensorFlowInferenceInterface;
 
 import java.io.InputStream;
 
-public class TensorflowImageClassifier {
+public class TensorflowImageClassifier implements ImageClassifier {
     private int imageSize;
     private TensorFlowInferenceInterface tfExecutor;
     private String inputLayerName;
