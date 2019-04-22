@@ -58,6 +58,8 @@ def create_training_data():
     return training_data
 
 
+
+
 if __name__ == "__main__":
     data = create_training_data()
     random.shuffle(data)

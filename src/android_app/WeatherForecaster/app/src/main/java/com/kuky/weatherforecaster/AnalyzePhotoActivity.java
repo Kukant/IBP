@@ -14,12 +14,14 @@ import android.widget.TextView;
 import com.cloudinary.android.callback.ErrorInfo;
 import com.cloudinary.android.callback.UploadCallback;
 
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
 public class AnalyzePhotoActivity extends AppCompatActivity {
     private Button btnBack;
     private CloudRecognizer cloudRecognizer;
+    private CloudClassifier cloudClassifier;
     private CloudinaryConnector cloudinaryConnector;
     private TextView textView;
     private ImageView imageView;
@@ -45,6 +47,8 @@ public class AnalyzePhotoActivity extends AppCompatActivity {
 
         cloudinaryConnector = new CloudinaryConnector(getApplicationContext());
 
+        cloudClassifier = new CloudClassifier(getApplicationContext());
+
         Bundle bundle = getIntent().getExtras();
         assert bundle != null;
 
@@ -65,7 +69,21 @@ public class AnalyzePhotoActivity extends AppCompatActivity {
         cloudinaryConnector.sendImage(filepath,
                 cloudProbability > 0.5 ? CloudinaryConnector.cloudsPreset : CloudinaryConnector.othersPreset);
 
-        textView.setText(String.format(Locale.ENGLISH, "Object on photo is %.2f %% sky.", cloudProbability*100));
+        if (cloudProbability > 0.5) {
+            CloudsClassification cloudsClassification = cloudClassifier.getImageCloudsClassification(filepath);
+            HashMap<String,Float> cloudsMap = cloudsClassification.getCloudsScoreHashMap();
+            String text = "";
+            for (Map.Entry<String, Float> item : cloudsMap.entrySet()) {
+                String key = item.getKey();
+                Float value = item.getValue();
+                text += String.format(Locale.ENGLISH, "%.2f %% %s\n",  value*100, key);
+            }
+            textView.setText(text);
+            textView.setTextAlignment(View.TEXT_ALIGNMENT_TEXT_START);
+        } else {
+            textView.setText(String.format(Locale.ENGLISH, "Object on photo is not a sky. (%.2f %% sure)",  (1 - cloudProbability)*100));
+            textView.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        }
     }
 
     private void backToMainActivity() {
