@@ -45,24 +45,24 @@ public class CloudinaryConnector {
         ctx = appContext;
     }
 
-    public void sendImage(String filePath, String preset) {
+    public void sendImage(String filePath, String preset, String cloudsCategory) {
         filePath = scaleImage(filePath);
         try {
             MediaManager.get()
                     .upload(filePath)
                     .unsigned(preset)
-                    .option("public_id", getUniqueFilename())
+                    .option("public_id", getUniqueFilename(cloudsCategory))
                     .dispatch();
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    private String getUniqueFilename() {
+    private String getUniqueFilename(String cloudsCategory) {
         DateFormat df = new SimpleDateFormat("yyMMddHHmmss");
         String date = df.format(Calendar.getInstance().getTime());
         String ranStr = UUID.randomUUID().toString().replace("-", "").substring(0, 6);
-        return date + "-" + ranStr;
+        return cloudsCategory + "-" + date + "-" + ranStr;
     }
 
     private String scaleImage(String filePath) {

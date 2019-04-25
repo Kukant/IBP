@@ -66,13 +66,12 @@ public class AnalyzePhotoActivity extends AppCompatActivity {
 
     private void analyzeImage(String filepath) {
         float cloudProbability = cloudRecognizer.IsCloud(filepath);
-        cloudinaryConnector.sendImage(filepath,
-                cloudProbability > 0.5 ? CloudinaryConnector.cloudsPreset : CloudinaryConnector.othersPreset);
-
+        String clouds_category;
         if (cloudProbability > 0.5) {
             CloudsClassification cloudsClassification = cloudClassifier.getImageCloudsClassification(filepath);
             HashMap<String,Float> cloudsMap = cloudsClassification.getCloudsScoreHashMap();
             String text = "";
+            clouds_category = cloudsMap.keySet().iterator().next();
             for (Map.Entry<String, Float> item : cloudsMap.entrySet()) {
                 String key = item.getKey();
                 Float value = item.getValue();
@@ -81,9 +80,15 @@ public class AnalyzePhotoActivity extends AppCompatActivity {
             textView.setText(text);
             textView.setTextAlignment(View.TEXT_ALIGNMENT_TEXT_START);
         } else {
+            clouds_category = "nocloud";
             textView.setText(String.format(Locale.ENGLISH, "Object on photo is not a sky. (%.2f %% sure)",  (1 - cloudProbability)*100));
             textView.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         }
+
+        cloudinaryConnector.sendImage(
+                filepath,
+                cloudProbability > 0.5 ? CloudinaryConnector.cloudsPreset : CloudinaryConnector.othersPreset,
+                clouds_category);
     }
 
     private void backToMainActivity() {

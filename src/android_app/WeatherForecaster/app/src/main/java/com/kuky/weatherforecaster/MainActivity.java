@@ -37,6 +37,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.UUID;
 import java.lang.*;
@@ -103,6 +104,7 @@ public class MainActivity extends AppCompatActivity {
     private Handler mBackgroundHandler;
     private HandlerThread mBackgroundThread;
     private CloudRecognizer cloudRecognizer;
+    private CloudClassifier cloudClassifier;
     private CloudinaryConnector cloudinaryConnector;
 
     @Override
@@ -148,6 +150,8 @@ public class MainActivity extends AppCompatActivity {
         });
 
         cloudRecognizer = new CloudRecognizer(getApplicationContext());
+
+        cloudClassifier = new CloudClassifier(getApplicationContext());
 
         cloudinaryConnector = new CloudinaryConnector(getApplicationContext());
     }
@@ -386,8 +390,14 @@ public class MainActivity extends AppCompatActivity {
 
         if (quickMode) {
             float cloudProbability = cloudRecognizer.IsCloud(filepath);
-            cloudinaryConnector.sendImage(filepath,
-                    cloudProbability > 0.5 ? CloudinaryConnector.cloudsPreset : CloudinaryConnector.othersPreset);
+            CloudsClassification cloudsClassification = cloudClassifier.getImageCloudsClassification(filepath);
+            HashMap<String,Float> cloudsMap = cloudsClassification.getCloudsScoreHashMap();
+            String cloudsCategory = cloudsMap.keySet().iterator().next();
+
+            cloudinaryConnector.sendImage(
+                    filepath,
+                    cloudProbability > 0.5 ? CloudinaryConnector.cloudsPreset : CloudinaryConnector.othersPreset,
+                    cloudsCategory);
 
             showToast(String.format(Locale.ENGLISH, "Object on photo is %.2f %% sky.", cloudProbability*100));
         } else {
