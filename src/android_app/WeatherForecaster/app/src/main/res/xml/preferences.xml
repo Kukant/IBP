@@ -7,4 +7,10 @@
         android:summary="Click to switch on or off"
         android:defaultValue="false"/>
 
+    <SwitchPreference
+        android:key="key_switch_debug_mode"
+        android:title="Debug mode"
+        android:summary="Click to switch on or off"
+        android:defaultValue="false"/>
+
 </PreferenceScreen>

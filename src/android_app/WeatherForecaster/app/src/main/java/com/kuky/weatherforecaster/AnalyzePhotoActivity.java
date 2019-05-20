@@ -1,9 +1,11 @@
 package com.kuky.weatherforecaster;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
+import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
@@ -25,6 +27,7 @@ public class AnalyzePhotoActivity extends AppCompatActivity {
     private CloudinaryConnector cloudinaryConnector;
     private TextView textView;
     private ImageView imageView;
+    private String clouds_category;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,18 +69,8 @@ public class AnalyzePhotoActivity extends AppCompatActivity {
 
     private void analyzeImage(String filepath) {
         float cloudProbability = cloudRecognizer.IsCloud(filepath);
-        String clouds_category;
         if (cloudProbability > 0.5) {
-            CloudsClassification cloudsClassification = cloudClassifier.getImageCloudsClassification(filepath);
-            HashMap<String,Float> cloudsMap = cloudsClassification.getCloudsScoreHashMap();
-            String text = "";
-            clouds_category = cloudsMap.keySet().iterator().next();
-            for (Map.Entry<String, Float> item : cloudsMap.entrySet()) {
-                String key = item.getKey();
-                Float value = item.getValue();
-                text += String.format(Locale.ENGLISH, "%.2f %% %s\n",  value*100, key);
-            }
-            textView.setText(text);
+            textView.setText(getDescription(filepath));
             textView.setTextAlignment(View.TEXT_ALIGNMENT_TEXT_START);
         } else {
             clouds_category = "nocloud";
@@ -89,6 +82,27 @@ public class AnalyzePhotoActivity extends AppCompatActivity {
                 filepath,
                 cloudProbability > 0.5 ? CloudinaryConnector.cloudsPreset : CloudinaryConnector.othersPreset,
                 clouds_category);
+    }
+
+    private String getDescription(String filepath) {
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+        boolean debugMode = preferences.getBoolean("key_switch_debug_mode", false);
+
+        CloudsClassification cloudsClassification = cloudClassifier.getImageCloudsClassification(filepath);
+        HashMap<String,Float> cloudsMap = cloudsClassification.getCloudsScoreHashMap();
+        String text = "";
+        clouds_category = cloudsMap.keySet().iterator().next();
+        if (debugMode) {
+            for (Map.Entry<String, Float> item : cloudsMap.entrySet()) {
+                String key = item.getKey();
+                Float value = item.getValue();
+                text += String.format(Locale.ENGLISH, "%.2f %% %s\n",  value*100, key);
+            }
+        } else {
+            text = cloudsClassification.getForecast();
+        }
+
+        return text;
     }
 
     private void backToMainActivity() {

@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.res.Resources;
 
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -23,7 +24,7 @@ class CloudClassifier {
         this.ctx = ctx;
         InputStream modelIs = ctx.getResources().openRawResource(R.raw.cloud_classifier);
         classifier = new TensorflowImageClassifier(
-                modelIs, "conv2d_118_input:0","activation_168/Sigmoid",
+                modelIs, "conv2d_73_input:0","activation_105/Sigmoid",
                 200, 7);
     }
 
@@ -78,5 +79,27 @@ class CloudsClassification {
         }
 
         return sortedHashMap;
+    }
+
+    public String getForecast() {
+        String currentClouds = cloudsMap.keySet().iterator().next();
+        return getForecastByClouds(currentClouds);
+    }
+
+    private String getForecastByClouds(String currentClouds) {
+        if (!Arrays.asList(cloudClasses).contains(currentClouds)) {
+            return "unknown";
+        }
+        switch (currentClouds) {
+            case "clear_sky": return "What a lovely day.";
+            case "cirrus": return "The weather is going to be grand.";
+            case "cirrocumulus,altocumulus": return "Prepare for slow rain arrival";
+            case "cirrostratus": return "There could be some rain in the next 12 to 24 hours.";
+            case "altostratus,nimbostratus,stratus": return "It is going to remain rainy/overcast.";
+            case "cumulus": return "Look out for vertical growth.";
+            case "stratocumulus": return "Expect no rain. The clouds are going to stay or disperse.";
+        }
+
+        return "error";
     }
 }
