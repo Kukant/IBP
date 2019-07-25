@@ -129,6 +129,10 @@ def main(args):
 
     # TODO(amirabdi): Support networks with multiple inputs
     orig_output_node_names = [node.op.name for node in model.outputs]
+    print("inputs")
+    print(model.inputs)
+    print("outputs")
+    print(orig_output_node_names)
     if FLAGS.output_nodes_prefix:
         num_output = len(orig_output_node_names)
         pred = [None] * num_output

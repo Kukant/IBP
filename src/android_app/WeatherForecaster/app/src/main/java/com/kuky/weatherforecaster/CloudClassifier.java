@@ -13,7 +13,6 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 
 
 class CloudClassifier {
@@ -24,7 +23,7 @@ class CloudClassifier {
         this.ctx = ctx;
         InputStream modelIs = ctx.getResources().openRawResource(R.raw.cloud_classifier);
         classifier = new TensorflowImageClassifier(
-                modelIs, "conv2d_73_input:0","activation_105/Sigmoid",
+                modelIs, "conv2d_3_input:0","activation_7/Softmax",
                 200, 7);
     }
 
@@ -32,6 +31,7 @@ class CloudClassifier {
     CloudsClassification getImageCloudsClassification(String imagePath) {
         return new CloudsClassification(classifier.classifyImage(imagePath));
     }
+
 
     CloudsClassification getImageCloudsClassification(Resources resources, int resId) {
         return new CloudsClassification(classifier.classifyImage(resources, resId));

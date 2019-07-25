@@ -8,8 +8,8 @@ import glob
 
 mpl.rcParams['figure.dpi'] = 300
 
-csvs_dir = 'csvs/3/*3-conv*5-epochs*'
-files = glob.glob(csvs_dir) + glob.glob('csvs/2/*3-conv*epochs*')
+csvs_dir = 'csvs/4/*3-conv*5-epochs*blahblah'
+files = glob.glob(csvs_dir) + glob.glob('csvs/4/*old*')
 load = lambda file: np.genfromtxt(file, delimiter=',', names=['Wall time', 'Step', 'Value'])
 data_list = [(load(f), f) for f in files]
 
@@ -28,12 +28,12 @@ color = None
 for data, filename in data_list:
     #numbers = [int(s) for s in filename.split("-") if s.isdigit()]
     #label = "{}x{}".format(numbers[0], numbers[1])
-    color = "r" if "/3/" in filename else "b"
+    #color = "r" if "300" in filename else "b"
     ax.plot(data["Step"], data["Value"], color=color, label=label, antialiased=True,)
 
 
-if True:
-    legend_dict = {'Augmentace': 'red', 'Bez augmentace': 'blue'}
+if False:
+    legend_dict = {'300x300': 'red', '200x200': 'blue'}
     patchList = []
     for key in legend_dict:
             data_key = mpatches.Patch(color=legend_dict[key], label=key)
@@ -42,4 +42,5 @@ if True:
     ax.legend(handles=patchList)
 
 #ax.legend()
-plt.show()
+#plt.show()
+plt.savefig("random-old.png")
